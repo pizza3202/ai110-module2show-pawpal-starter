@@ -4,6 +4,34 @@
 
 **a. Initial design**
 
+Three core actions a user should be able to perform:
+
+1. **Enter owner and pet info** — The user provides basic details about themselves and their pet (name, pet type, available time per day, and any preferences or constraints).
+2. **Add and edit care tasks** — The user can create, update, or remove pet care tasks such as walks, feeding, medications, grooming, or enrichment activities. Each task has at minimum a duration and a priority level.
+3. **Generate a daily schedule/plan** — The user triggers the scheduler to produce a daily care plan based on the tasks and constraints entered. The app displays the plan and explains why it was arranged that way.
+
+Main building blocks (objects) for PawPal+:
+
+**Owner**
+- Attributes: `name`, `available_time_per_day` (minutes), `preferences` (e.g. prefers morning walks)
+- Methods: `get_available_time()`, `update_preferences()`
+
+**Pet**
+- Attributes: `name`, `species`, `age`, `owner`
+- Methods: `get_info()`
+
+**Task**
+- Attributes: `name`, `category` (walk/feed/medication/grooming/enrichment), `duration` (minutes), `priority` (high/medium/low), `is_completed`
+- Methods: `mark_complete()`, `update()`
+
+**Scheduler**
+- Attributes: `tasks`, `owner`, `pet`
+- Methods: `generate_plan()`, `prioritize_tasks()`, `check_constraints()`
+
+**DailyPlan**
+- Attributes: `date`, `scheduled_tasks`, `total_duration`, `explanation`
+- Methods: `display()`, `get_summary()`
+
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
