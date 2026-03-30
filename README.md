@@ -31,6 +31,26 @@ Beyond the basic daily plan, `pawpal_system.py` includes three algorithmic impro
 - **Recurring tasks** — `Task` supports `frequency` (`"once"`, `"daily"`, `"weekly"`). Calling `mark_complete()` on a recurring task automatically advances its `due_date` using `timedelta` instead of removing it.
 - **Conflict detection** — `Scheduler.detect_conflicts()` warns when two tasks share the same `start_time`, preventing accidental double-booking.
 
+## Testing PawPal+
+
+Run the full test suite with:
+
+```bash
+.venv/bin/python -m pytest tests/test_pawpal.py -v
+```
+
+The suite covers 12 tests across four areas:
+
+| Area | What is tested |
+|---|---|
+| **Task completion** | `mark_complete()` sets `is_completed`; `once` tasks stay done |
+| **Sorting** | Tasks returned in chronological HH:MM order; untimed tasks go last |
+| **Recurrence** | Daily tasks reschedule to tomorrow; weekly to next week; `is_completed` resets |
+| **Conflict detection** | Duplicate `start_time` triggers a warning; unique times and no-time tasks are safe |
+| **Edge cases** | Empty pet task list returns an empty plan; tasks exceeding the time budget are skipped |
+
+**Confidence level: ★★★★☆** — Core scheduling behaviors are well covered. Not yet tested: multi-pet conflict detection across pets, preference-based ordering, or UI integration.
+
 ## Getting started
 
 ### Setup
