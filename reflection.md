@@ -32,13 +32,11 @@ Main building blocks (objects) for PawPal+:
 - Attributes: `date`, `scheduled_tasks`, `total_duration`, `explanation`
 - Methods: `display()`, `get_summary()`
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+The initial design had five classes: **Owner** (holds user info and daily time budget), **Pet** (stores pet profile), **Task** (represents one care activity with duration and priority), **Scheduler** (takes owner/pet/tasks and produces a plan), and **DailyPlan** (stores and displays the final schedule with reasoning). Relationships: Owner owns a Pet, Scheduler reads from all three and outputs a DailyPlan.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Yes. After reviewing the skeleton, I moved the task list into `Pet` (adding `tasks`, `add_task()`, and `remove_task()` to the `Pet` class). Originally, `Scheduler` held the task list directly, which created ambiguity about who owned the tasks. Since tasks belong to a pet's care routine, it makes more sense for `Pet` to be the source of truth, and for `Scheduler` to read from `pet.tasks`.
 
 ---
 
@@ -51,8 +49,9 @@ Main building blocks (objects) for PawPal+:
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+The conflict detector only flags tasks that share the **exact same `start_time` string** (e.g. both set to `"18:00"`). It does not check whether task durations cause overlap — for example, a 30-minute task at `"17:45"` and a task at `"18:00"` would not be flagged even though they overlap in real time.
+
+This tradeoff is reasonable for a first version because most pet care tasks are short and loosely scheduled. Requiring exact duration-overlap math would add significant complexity (converting times to minutes, checking ranges) for little practical gain at this scale. A future improvement would be to track actual end times and detect range overlaps.
 
 ---
 
