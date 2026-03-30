@@ -22,14 +22,93 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
-## Smarter Scheduling
+## Demo
 
-Beyond the basic daily plan, `pawpal_system.py` includes three algorithmic improvements:
+**Owner & Pet setup**
 
-- **Sort by time** — `Scheduler.sort_by_time()` orders tasks by `start_time` (HH:MM), with untimed tasks placed last.
-- **Filter tasks** — `Scheduler.filter_tasks()` returns tasks matching a completion status, a pet name, or both.
-- **Recurring tasks** — `Task` supports `frequency` (`"once"`, `"daily"`, `"weekly"`). Calling `mark_complete()` on a recurring task automatically advances its `due_date` using `timedelta` instead of removing it.
-- **Conflict detection** — `Scheduler.detect_conflicts()` warns when two tasks share the same `start_time`, preventing accidental double-booking.
+![PawPal+ owner and pet setup](pawpal1.png)
+
+**Task list & schedule generation**
+
+![PawPal+ task list](pawpal2.png)
+
+**Today's Plan output**
+
+![PawPal+ daily plan](pawpal3.png)
+
+## Features
+
+- **Owner & pet profiles** — Store the owner's name, daily time budget, and preferences alongside one or more pets.
+- **Task management** — Add care tasks (walk, feed, medication, grooming, enrichment) with a duration, priority, frequency, and optional start time.
+- **Priority scheduling** — The scheduler fits as many tasks as possible into the daily time budget, ordering by priority (high → medium → low) then shortest duration first.
+- **Sort by time** — Tasks can be displayed in chronological HH:MM order; untimed tasks appear last.
+- **Filter tasks** — Retrieve pending or completed tasks for a specific pet or across all pets.
+- **Recurring tasks** — Tasks with `frequency="daily"` or `"weekly"` automatically reschedule their `due_date` when marked complete instead of disappearing.
+- **Conflict detection** — The scheduler flags any two tasks sharing the same `start_time` with a clear warning before the plan is shown.
+- **Reasoning display** — Every generated plan explains which tasks were scheduled, why, and which were skipped.
+
+## Updated UML (Final)
+
+```mermaid
+classDiagram
+    class Owner {
+        +String name
+        +int available_time_per_day
+        +String preferences
+        +List pets
+        +add_pet(pet)
+        +get_available_time()
+        +update_preferences(preferences)
+        +get_all_tasks()
+    }
+
+    class Pet {
+        +String name
+        +String species
+        +int age
+        +List tasks
+        +get_info()
+        +add_task(task)
+        +remove_task(task_name)
+    }
+
+    class Task {
+        +String name
+        +String category
+        +int duration
+        +String priority
+        +bool is_completed
+        +String frequency
+        +String due_date
+        +String start_time
+        +mark_complete()
+        +update(**kwargs)
+    }
+
+    class Scheduler {
+        +Owner owner
+        +sort_by_time(tasks)
+        +filter_tasks(completed, pet_name)
+        +detect_conflicts()
+        +prioritize_tasks()
+        +check_constraints()
+        +generate_plan()
+    }
+
+    class DailyPlan {
+        +String date
+        +List scheduled_tasks
+        +int total_duration
+        +String explanation
+        +display()
+        +get_summary()
+    }
+
+    Owner "1" --> "*" Pet : owns
+    Pet "1" --> "*" Task : has tasks
+    Scheduler --> Owner : reads from
+    Scheduler --> DailyPlan : produces
+```
 
 ## Testing PawPal+
 

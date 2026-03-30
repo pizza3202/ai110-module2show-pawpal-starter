@@ -3,15 +3,12 @@ from pawpal_system import Owner, Pet, Task, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
-
-# ── Step 2: Session state "memory" ───────────────────────────────────────────
-# Streamlit reruns top-to-bottom on every interaction, so we store the Owner
-# object in st.session_state so it persists across button clicks.
+st.caption("Your smart daily pet care planner.")
 
 if "owner" not in st.session_state:
     st.session_state.owner = None
 
-# ── Step 1: Owner + Pet setup ─────────────────────────────────────────────────
+# ── Owner & Pet setup ──────────────────────────────────────────────────────────
 st.subheader("Owner & Pet Info")
 
 col1, col2 = st.columns(2)
@@ -33,8 +30,8 @@ if st.button("Save Owner & Pet"):
 
 st.divider()
 
-# ── Add tasks ─────────────────────────────────────────────────────────────────
-st.subheader("Tasks")
+# ── Add tasks ──────────────────────────────────────────────────────────────────
+st.subheader("Add a Task")
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -44,32 +41,61 @@ with col2:
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 
-category = st.selectbox("Category", ["walk", "feed", "medication", "grooming", "enrichment"])
+col4, col5, col6 = st.columns(3)
+with col4:
+    category = st.selectbox("Category", ["walk", "feed", "medication", "grooming", "enrichment"])
+with col5:
+    frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
+with col6:
+    start_time = st.text_input("Start time (HH:MM, optional)", value="")
 
 if st.button("Add Task"):
     if st.session_state.owner is None:
         st.warning("Please save Owner & Pet info first.")
     else:
-        task = Task(name=task_name, category=category, duration=int(duration), priority=priority)
-        # Add task to the first (and usually only) pet
+        task = Task(
+            name=task_name,
+            category=category,
+            duration=int(duration),
+            priority=priority,
+            frequency=frequency,
+            start_time=start_time.strip() or None,
+        )
         st.session_state.owner.pets[0].add_task(task)
-        st.success(f"Added task: {task_name}")
+        st.success(f"Added: {task_name} ({frequency})")
 
-# Show current tasks
+# Show current tasks sorted by time
 if st.session_state.owner and st.session_state.owner.get_all_tasks():
+    scheduler = Scheduler(owner=st.session_state.owner)
+    sorted_tasks = scheduler.sort_by_time(st.session_state.owner.get_all_tasks())
+
     task_data = [
-        {"Task": t.name, "Category": t.category, "Duration (min)": t.duration, "Priority": t.priority}
-        for t in st.session_state.owner.get_all_tasks()
+        {
+            "Task": t.name,
+            "Category": t.category,
+            "Duration (min)": t.duration,
+            "Priority": t.priority,
+            "Frequency": t.frequency,
+            "Start Time": t.start_time or "—",
+        }
+        for t in sorted_tasks
     ]
-    st.write("Current tasks:")
+    st.write("Current tasks (sorted by start time):")
     st.table(task_data)
+
+    # Show conflict warnings inline
+    conflicts = scheduler.detect_conflicts()
+    if conflicts:
+        st.error("**Scheduling conflicts detected:**")
+        for c in conflicts:
+            st.warning(f"⚠️ {c}")
 else:
     st.info("No tasks yet. Add one above.")
 
 st.divider()
 
-# ── Generate schedule ─────────────────────────────────────────────────────────
-st.subheader("Build Schedule")
+# ── Generate schedule ──────────────────────────────────────────────────────────
+st.subheader("Generate Today's Schedule")
 
 if st.button("Generate Schedule"):
     if st.session_state.owner is None:
@@ -79,17 +105,28 @@ if st.button("Generate Schedule"):
     else:
         scheduler = Scheduler(owner=st.session_state.owner)
 
-        warnings = scheduler.check_constraints()
-        if warnings:
-            for w in warnings:
-                st.warning(w)
+        # Conflict warnings
+        conflicts = scheduler.detect_conflicts()
+        if conflicts:
+            st.error("Fix these conflicts before relying on this schedule:")
+            for c in conflicts:
+                st.warning(f"⚠️ {c}")
+
+        # Time budget warnings
+        for w in scheduler.check_constraints():
+            st.warning(w)
 
         plan = scheduler.generate_plan()
 
-        st.success(f"Schedule generated for {plan.date}!")
-        st.markdown(f"**Total time:** {plan.total_duration} / {st.session_state.owner.get_available_time()} min")
-        st.markdown(f"**Reasoning:** {plan.explanation}")
+        st.success(f"Schedule generated for {plan.date}")
+        st.markdown(f"**Time used:** {plan.total_duration} / {st.session_state.owner.get_available_time()} min")
 
         st.markdown("### Today's Plan")
+        priority_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}
         for i, task in enumerate(plan.scheduled_tasks, 1):
-            st.markdown(f"{i}. **[{task.priority.upper()}]** {task.name} `{task.category}` — {task.duration} min")
+            icon = priority_icon.get(task.priority, "⚪")
+            time_label = f" @ {task.start_time}" if task.start_time else ""
+            st.markdown(f"{i}. {icon} **{task.name}** `{task.category}`{time_label} — {task.duration} min · _{task.frequency}_")
+
+        with st.expander("Reasoning"):
+            st.write(plan.explanation)

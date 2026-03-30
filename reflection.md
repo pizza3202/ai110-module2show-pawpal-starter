@@ -44,8 +44,9 @@ Yes. After reviewing the skeleton, I moved the task list into `Pet` (adding `tas
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers two main constraints: the owner's **daily time budget** (total minutes available) and each task's **priority level** (high, medium, low). Tasks are sorted by priority first, then by shortest duration, and the scheduler greedily fits as many as possible within the time budget — skipping any that would exceed it.
+
+Time budget was the most important constraint because it directly limits what is physically possible in a day. Priority was second because it ensures critical care (medications, feeding) always gets scheduled before optional activities (grooming, enrichment).
 
 **b. Tradeoffs**
 
@@ -59,13 +60,13 @@ This tradeoff is reasonable for a first version because most pet care tasks are 
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+AI was used throughout every phase: brainstorming the initial class structure and UML diagram, generating Python class skeletons from the UML, implementing scheduling logic (priority sorting, greedy plan generation, recurring tasks, conflict detection), writing the test suite, and wiring the backend to the Streamlit UI.
+
+The most effective prompts were specific and structural — for example, asking for a Mermaid class diagram based on named attributes and methods, or asking to implement a specific method (like `detect_conflicts`) with a clear description of its expected behavior. Vague prompts produced generic code; specific prompts produced code that fit the existing design.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+When AI first generated the `Scheduler` class, it held the task list directly as `self.tasks`. I rejected this because it created ambiguity — tasks logically belong to a pet, not the scheduler. I moved the task list into `Pet` and had `Scheduler` read from `owner.get_all_tasks()` instead. I verified this by tracing the data flow: the owner owns pets, pets own tasks, and the scheduler only reads and organizes — it does not store data. This matched the single-responsibility principle more cleanly.
 
 ---
 
@@ -73,13 +74,13 @@ This tradeoff is reasonable for a first version because most pet care tasks are 
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+The test suite covers 12 behaviors across five areas: task completion (`mark_complete()` sets the flag), task addition (pet task count increases), sorting correctness (tasks returned in chronological HH:MM order, untimed tasks last), recurrence logic (daily tasks reschedule to tomorrow, weekly to next week, once tasks stay completed), conflict detection (duplicate start times flagged, unique times and no-time tasks pass cleanly), and edge cases (empty task list returns an empty plan, tasks exceeding the time budget are skipped).
+
+These tests were important because the scheduler's core value — fitting the right tasks into a limited day — depends entirely on correct prioritization and constraint checking. A bug in `generate_plan` or `mark_complete` would silently produce wrong schedules.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+Confidence level: ★★★★☆. The core scheduling behaviors (priority ordering, time budget, recurrence, conflict detection) are all tested and passing. Less confident about multi-pet edge cases, tasks with identical names across different pets, and preference-based ordering, which are not yet tested. UI integration (e.g. what happens if the user generates a schedule twice in a row) is also untested.
 
 ---
 
@@ -87,12 +88,12 @@ This tradeoff is reasonable for a first version because most pet care tasks are 
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+The separation between the logic layer (`pawpal_system.py`) and the UI (`app.py`) worked well. Because all scheduling logic lived in Python classes, it was easy to test independently and then connect to Streamlit without rewriting anything. The greedy scheduling algorithm was also simple to reason about and debug — the explanation text made it easy to verify the output was correct.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+I would add duration-overlap conflict detection instead of exact start-time matching. The current detector misses cases where a 30-minute task at 17:45 overlaps with a task at 18:00. I would also add support for multiple pets with separate schedules displayed side by side, and allow the user to mark tasks complete directly in the UI rather than only in code.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+The most important lesson was that AI is a fast and capable collaborator, but it needs the human to act as the architect. AI will generate working code quickly, but without a clear design (UML, class responsibilities, data ownership), the generated code drifts toward whatever is easiest rather than what is correct for the system. Deciding that `Pet` owns tasks, not `Scheduler`, was a human judgment call that made the entire system cleaner — AI would not have made that call on its own without being guided.
